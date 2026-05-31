@@ -150,10 +150,33 @@ FLASHER_BOARD_CONFIGS: dict[str, dict[str, Any]] = {
         "doip_port": int(os.getenv("FRONT_ZCU_OTA_PORT", "13400")),
         "tester_address": int(os.getenv("FRONT_ZCU_TESTER_ADDRESS", "0x0E00"), 0),
         "ecu_address": int(os.getenv("FRONT_ZCU_ECU_ADDRESS", "0x0001"), 0),
+
+        # Sparse OTA package asset name. This is used when a zip package is uploaded manually.
+        "package_file": os.getenv(
+            "FRONT_ZCU_OTA_PACKAGE_FILE",
+            "firmware-front-zcu_ota_package.zip",
+        ),
+        "chunk_size": int(os.getenv("FRONT_ZCU_OTA_CHUNK_SIZE", "512")),
+        "progress_update_interval_blocks": int(
+            os.getenv("FRONT_ZCU_OTA_PROGRESS_INTERVAL_BLOCKS", "10")
+        ),
+
+        # Legacy compatibility for old continuous-bin flashing path.
         "bank_start": int(os.getenv("FRONT_ZCU_BANK_START", "0x80300000"), 0),
-        "timeout_seconds": float(os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "60")),
-        "p2_timeout_seconds": float(os.getenv("FRONT_ZCU_UDS_P2_TIMEOUT_SECONDS", os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "60"))),
-        "p2_star_timeout_seconds": float(os.getenv("FRONT_ZCU_UDS_P2_STAR_TIMEOUT_SECONDS", os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "60"))),
+
+        "timeout_seconds": float(os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "120")),
+        "p2_timeout_seconds": float(
+            os.getenv(
+                "FRONT_ZCU_UDS_P2_TIMEOUT_SECONDS",
+                os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "120"),
+            )
+        ),
+        "p2_star_timeout_seconds": float(
+            os.getenv(
+                "FRONT_ZCU_UDS_P2_STAR_TIMEOUT_SECONDS",
+                os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "120"),
+            )
+        ),
         "use_server_timing": os.getenv("FRONT_ZCU_UDS_USE_SERVER_TIMING", "0") == "1",
     },
     "sensor-ecu": {
@@ -166,11 +189,24 @@ FLASHER_BOARD_CONFIGS: dict[str, dict[str, Any]] = {
         "doip_port": int(os.getenv("AEB_SENSOR_ECU_OTA_DOIP_PORT", "13401")),
         "tester_address": int(os.getenv("AEB_SENSOR_ECU_OTA_TESTER_ADDRESS", "0x0E00"), 0),
         "ecu_address": int(os.getenv("AEB_SENSOR_ECU_OTA_ZCU_ADDRESS", "0x0001"), 0),
-        "app_addr": int(os.getenv("AEB_SENSOR_ECU_OTA_APP_ADDR", "0x80020000"), 0),
-        "block_size": int(
-            os.getenv("AEB_SENSOR_ECU_OTA_BLOCK_SIZE", str(SENSOR_CAN_OTA_MAX_DATA_BLOCK_SIZE))
+
+        # Sparse OTA package asset name. This is used when a zip package is uploaded manually.
+        "package_file": os.getenv(
+            "AEB_SENSOR_ECU_OTA_PACKAGE_FILE",
+            "sensor-ecu_ota_package.zip",
         ),
-        "timeout_seconds": float(os.getenv("AEB_SENSOR_ECU_OTA_TIMEOUT_SECONDS", "60")),
+        "block_size": int(os.getenv("AEB_SENSOR_ECU_OTA_BLOCK_SIZE", "32")),
+        "ready_check_timeout_seconds": float(
+            os.getenv("AEB_SENSOR_ECU_OTA_READY_TIMEOUT_SECONDS", "120")
+        ),
+        "progress_update_interval_blocks": int(
+            os.getenv("AEB_SENSOR_ECU_OTA_PROGRESS_INTERVAL_BLOCKS", "50")
+        ),
+
+        # Legacy compatibility for old continuous-bin flashing path.
+        "app_addr": int(os.getenv("AEB_SENSOR_ECU_OTA_APP_ADDR", "0x80020000"), 0),
+
+        "timeout_seconds": float(os.getenv("AEB_SENSOR_ECU_OTA_TIMEOUT_SECONDS", "120")),
         "block_delay_seconds": float(os.getenv("MANUAL_SENSOR_ECU_OTA_BLOCK_DELAY_SECONDS", "0")),
         "activate_after_transfer": False,
     },
@@ -227,7 +263,7 @@ STORE_CATALOG = [
         "full_name": "자동 긴급 제동",
         "description": "전방 위험 상황을 감지하면 긴급 제동을 보조하는 기능입니다.",
         "kind": "feature",
-        "latest_version": "1.0.0",
+        "latest_version": "2.0.0",
         "downloadable": True,
         "package_required": False,
         "download_file": "AEB.py",
@@ -238,43 +274,88 @@ STORE_CATALOG = [
                 "id": "sensor_ecu_firmware",
                 "type": "doip_sensor_can_ota",
                 "target": "sensor-ecu",
-                "release_repo": os.getenv("AEB_SENSOR_ECU_OTA_REPO", "HAMES-6th-Overdrive/sensor-ecu"),
+                "release_repo": os.getenv(
+                    "AEB_SENSOR_ECU_OTA_REPO",
+                    "HAMES-6th-Overdrive/sensor-ecu",
+                ),
                 "target_dir": "firmware",
+
+                # GitHub Release asset name.
+                # Version 판단은 release tag(v2.0.0)로 하고, 이 값은 asset 선택에만 사용한다.
+                "package_file": os.getenv(
+                    "AEB_SENSOR_ECU_OTA_PACKAGE_FILE",
+                    "sensor-ecu_ota_package.zip",
+                ),
+
                 "ecu_ip": os.getenv("AEB_SENSOR_ECU_OTA_ZCU_IP", "192.168.10.2"),
                 "doip_port": int(os.getenv("AEB_SENSOR_ECU_OTA_DOIP_PORT", "13401")),
                 "tester_address": int(os.getenv("AEB_SENSOR_ECU_OTA_TESTER_ADDRESS", "0x0E00"), 0),
                 "ecu_address": int(os.getenv("AEB_SENSOR_ECU_OTA_ZCU_ADDRESS", "0x0001"), 0),
+
+                # Legacy compatibility for old continuous-bin flashing path.
                 "app_addr": int(os.getenv("AEB_SENSOR_ECU_OTA_APP_ADDR", "0x80020000"), 0),
-                "block_size": int(
-                    os.getenv("AEB_SENSOR_ECU_OTA_BLOCK_SIZE", str(SENSOR_CAN_OTA_MAX_DATA_BLOCK_SIZE))
+
+                # Sparse package over ZCU Sensor Gateway.
+                "block_size": int(os.getenv("AEB_SENSOR_ECU_OTA_BLOCK_SIZE", "32")),
+                "timeout_seconds": float(os.getenv("AEB_SENSOR_ECU_OTA_TIMEOUT_SECONDS", "120")),
+                "ready_check_timeout_seconds": float(
+                    os.getenv("AEB_SENSOR_ECU_OTA_READY_TIMEOUT_SECONDS", "120")
                 ),
-                "timeout_seconds": float(os.getenv("AEB_SENSOR_ECU_OTA_TIMEOUT_SECONDS", "60")),
                 "block_delay_seconds": float(
                     os.getenv(
                         "AEB_SENSOR_ECU_OTA_BLOCK_DELAY_SECONDS",
                         os.getenv("MANUAL_SENSOR_ECU_OTA_BLOCK_DELAY_SECONDS", "0"),
                     )
                 ),
-                "progress_update_interval_blocks": 1,
+                "progress_update_interval_blocks": int(
+                    os.getenv("AEB_SENSOR_ECU_OTA_PROGRESS_INTERVAL_BLOCKS", "50")
+                ),
                 "activate_after_transfer": False,
-                "release_patch_filter": int(os.getenv("AEB_SENSOR_ECU_OTA_RELEASE_PATCH_FILTER", "0")),
             },
             {
                 "id": "zcu_firmware",
                 "type": "doip_uds_flash",
                 "target": "zcu",
-                "release_repo": "HAMES-6th-Overdrive/firmware-front-zcu",
+                "release_repo": os.getenv(
+                    "FRONT_ZCU_OTA_REPO",
+                    "HAMES-6th-Overdrive/firmware-front-zcu",
+                ),
                 "target_dir": "firmware",
-                "ecu_ip": "192.168.10.2",
-                "doip_port": 13400,
-                "tester_address": 3584,
-                "ecu_address": 1,
-                "bank_start": 0x80300000,
-                "timeout_seconds": 60,
-                "p2_timeout_seconds": 60,
-                "p2_star_timeout_seconds": 60,
+
+                # GitHub Release asset name.
+                # Version 판단은 release tag(v2.0.0)로 하고, 이 값은 asset 선택에만 사용한다.
+                "package_file": os.getenv(
+                    "FRONT_ZCU_OTA_PACKAGE_FILE",
+                    "firmware-front-zcu_ota_package.zip",
+                ),
+
+                "ecu_ip": os.getenv("FRONT_ZCU_OTA_IP", "192.168.10.2"),
+                "doip_port": int(os.getenv("FRONT_ZCU_OTA_PORT", "13400")),
+                "tester_address": int(os.getenv("FRONT_ZCU_TESTER_ADDRESS", "0x0E00"), 0),
+                "ecu_address": int(os.getenv("FRONT_ZCU_ECU_ADDRESS", "0x0001"), 0),
+
+                # Legacy compatibility for old continuous-bin flashing path.
+                "bank_start": int(os.getenv("FRONT_ZCU_BANK_START", "0x80300000"), 0),
+
+                # Sparse package over ZCU self DoIP.
+                "chunk_size": int(os.getenv("FRONT_ZCU_OTA_CHUNK_SIZE", "512")),
+                "timeout_seconds": float(os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "120")),
+                "p2_timeout_seconds": float(
+                    os.getenv(
+                        "FRONT_ZCU_UDS_P2_TIMEOUT_SECONDS",
+                        os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "120"),
+                    )
+                ),
+                "p2_star_timeout_seconds": float(
+                    os.getenv(
+                        "FRONT_ZCU_UDS_P2_STAR_TIMEOUT_SECONDS",
+                        os.getenv("FRONT_ZCU_UDS_TIMEOUT_SECONDS", "120"),
+                    )
+                ),
                 "use_server_timing": False,
-                "release_patch_filter": 1,
+                "progress_update_interval_blocks": int(
+                    os.getenv("FRONT_ZCU_OTA_PROGRESS_INTERVAL_BLOCKS", "10")
+                ),
             },
         ],
     },
@@ -3339,8 +3420,8 @@ def api_server_worker(
                     detail=f"{board['name']} flashing is not implemented",
                 )
             filename = safe_filename(body.filename)
-            if not filename.lower().endswith(".bin"):
-                raise HTTPException(status_code=400, detail="binary file must have .bin extension")
+            if not filename.lower().endswith((".bin", ".zip")):
+                raise HTTPException(status_code=400, detail="firmware file must have .bin or .zip extension")
             try:
                 firmware = base64.b64decode(body.content_base64, validate=True)
             except (binascii.Error, ValueError) as exc:
@@ -3364,6 +3445,9 @@ def api_server_worker(
                     "tester_address": board["tester_address"],
                     "ecu_address": board["ecu_address"],
                     "bank_start": board["bank_start"],
+                    "package_file": board.get("package_file"),
+                    "chunk_size": board.get("chunk_size", 512),
+                    "progress_update_interval_blocks": board.get("progress_update_interval_blocks", 10),
                     "timeout_seconds": board["timeout_seconds"],
                     "p2_timeout_seconds": board["p2_timeout_seconds"],
                     "p2_star_timeout_seconds": board["p2_star_timeout_seconds"],
@@ -3380,10 +3464,12 @@ def api_server_worker(
                     "tester_address": board["tester_address"],
                     "ecu_address": board["ecu_address"],
                     "app_addr": board["app_addr"],
+                    "package_file": board.get("package_file"),
                     "block_size": board["block_size"],
+                    "ready_check_timeout_seconds": board.get("ready_check_timeout_seconds", 120),
                     "timeout_seconds": board["timeout_seconds"],
                     "block_delay_seconds": board["block_delay_seconds"],
-                    "progress_update_interval_blocks": 1,
+                    "progress_update_interval_blocks": board.get("progress_update_interval_blocks", 50),
                     "activate_after_transfer": board["activate_after_transfer"],
                 }
                 flash_message = f"{board['name']} CAN OTA via ZCU"
